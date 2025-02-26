@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jacobs underbara sida</title>
+    <style>
+        body {
+            background-color: #ffccff;
+            text-align: center;
+            font-family: "Comic Sans MS", cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            width: 90%;
+        }
+        canvas {
+            background: linear-gradient(to top, #ff99cc, #ffccff);
+            display: block;
+            border: 5px solid white;
+            border-radius: 15px;
+            box-shadow: 0px 0px 10px #ff66b2;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 20px;
+            background: #ff66b2;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 2px 2px 5px #ff0099;
+        }
+        button:hover {
+            background: #ff3385;
+        }
+        #guestbook, #music, #leaderboard {
+            padding: 10px;
+            background: white;
+            border-radius: 10px;
+            width: 250px;
+            box-shadow: 2px 2px 10px #ff66b2;
+        }
+        iframe {
+            width: 100%;
+            height: 152px;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jacobs underbara sida</h1>
+    <div id="startScreen">
+        <h2>Välj karaktär och skriv in ditt namn</h2>
+        <input type="text" id="playerName" placeholder="Ditt namn">
+        <br>
+        <button onclick="selectCharacter('💁🏻‍♂️')">💁🏻‍♂️</button>
+        <button onclick="selectCharacter('💁‍♀️')">💁‍♀️</button>
+        <br>
+        <button onclick="startGame()">Starta spelet</button>
+    </div>
+    <div class="container" id="gameContainer" style="display: none;">
+        <div id="music">
+            <h2>🎶 Musik 🎶</h2>
+            <iframe src="https://open.spotify.com/embed/playlist/6dxUl9yHf9EK9oRPi76sA9?utm_source=generator" frameBorder="0" allowfullscreen allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+        <div>
+            <canvas id="gameCanvas" width="500" height="300"></canvas>
+            <br>
+            <button onclick="jump()">Hoppa!</button>
+            <p>Poäng: <span id="score">0</span></p>
+        </div>
+        <div id="guestbook">
+            <h2>📖 Gästbok 📖</h2>
+            <textarea id="guestbookEntry" placeholder="Skriv en hälsning..." style="width: 90%; height: 50px;"></textarea><br>
+            <button onclick="addEntry()">📜 Lägg till</button>
+            <ul id="guestbookList"></ul>
+        </div>
+        <div id="leaderboard">
+            <h2>🏆 Topplista 🏆</h2>
+            <ul id="leaderboardList"></ul>
+        </div>
+    </div>
+    <script>
+        let playerName = "";
+        let selectedCharacter = "💁🏻‍♂️";
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        let player = { x: 50, y: 200, size: 30, velocity: 0, jumpPower: -10, grounded: true };
+        let gravity = 0.5;
+        let obstacles = [{ x: 500, y: Math.random() * 200 + 50, width: 50, height: 20 }];
+        let score = 0;
+        let leaderboard = [];
+
+        function selectCharacter(character) {
+            selectedCharacter = character;
+        }
+
+        function startGame() {
+            playerName = document.getElementById("playerName").value;
+            if (playerName.trim() === "") {
+                alert("Vänligen skriv in ditt namn");
+                return;
+            }
+            document.getElementById("startScreen").style.display = "none";
+            document.getElementById("gameContainer").style.display = "flex";
+            gameLoop();
+        }
+
+        function jump() {
+            if (player.grounded) {
+                player.velocity = player.jumpPower;
+                player.grounded = false;
+            }
+        }
+
+        function updateGame() {
+            player.velocity += gravity;
+            player.y += player.velocity;
+
+            if (player.y > 250) {
+                player.y = 250;
+                player.velocity = 0;
+                player.grounded = true;
+            }
+
+            obstacles.forEach(obstacle => {
+                obstacle.x -= 5;
+                if (obstacle.x + obstacle.width < 0) {
+                    obstacle.x = 500;
+                    obstacle.y = Math.random() * 200 + 50;
+                    score++;
+                    document.getElementById("score").textContent = score;
+                }
+                if (player.x < obstacle.x + obstacle.width && player.x + player.size > obstacle.x &&
+                    player.y + player.size > obstacle.y - 10 && player.y < obstacle.y + obstacle.height) {
+                    leaderboard.push({ name: playerName, score: score });
+                    leaderboard.sort((a, b) => b.score - a.score);
+                    updateLeaderboard();
+                    alert("Game Over! Poäng: " + score);
+                    document.location.reload();
+                }
+            });
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "30px Arial";
+            ctx.fillText(selectedCharacter, player.x, player.y + 25);
+        }
+
+        function gameLoop() {
+            updateGame();
+            drawGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateLeaderboard() {
+            let leaderboardList = document.getElementById("leaderboardList");
+            leaderboardList.innerHTML = "";
+            leaderboard.slice(0, 5).forEach((entry, index) => {
+                let li = document.createElement("li");
+                li.textContent = `${index + 1}. ${entry.name} - Poäng: ${entry.score}`;
+                leaderboardList.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
